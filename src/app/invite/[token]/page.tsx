@@ -594,9 +594,10 @@ export default function InvitationPage({
             <span className="text-accent">✦</span>
           </div>
           {data.event.description && (
-            <div className="text-text-muted mb-4 leading-relaxed whitespace-pre-line text-center">
-              {data.event.description}
-            </div>
+            <div
+              className="text-text-muted mb-4 leading-relaxed text-center prose-invite"
+              dangerouslySetInnerHTML={{ __html: data.event.description }}
+            />
           )}
 
           <div className="space-y-2 text-sm text-text-muted">

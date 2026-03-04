@@ -34,6 +34,7 @@ import {
 import { formatDate, formatTime } from "@/lib/utils";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmModal";
+import RichTextEditor, { ColorPickerField } from "@/components/RichTextEditor";
 
 interface Guest {
   id: string;
@@ -140,6 +141,7 @@ export default function EventDetailPage() {
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
+  const [editDescription, setEditDescription] = useState("");
 
   const loadEvent = useCallback(async () => {
     try {
@@ -185,7 +187,7 @@ export default function EventDetailPage() {
     try {
       const data = {
         name: formData.get("name") as string,
-        description: (formData.get("description") as string) || undefined,
+        description: editDescription || undefined,
         date: formData.get("date") as string,
         time: formData.get("time") as string,
         location: formData.get("location") as string,
@@ -273,8 +275,12 @@ export default function EventDetailPage() {
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                  <textarea name="description" defaultValue={event.description ?? ""} className="input-field min-h-[180px] whitespace-pre-wrap" placeholder={"Escribe la descripción de tu evento...\n\nLos saltos de línea y el espaciado que uses aquí se verán exactamente igual en la invitación digital."} />
-                  <p className="text-xs text-gray-500 mt-1">El texto se mostrará centrado en la invitación tal como lo escribas aquí, respetando saltos de línea y espaciado.</p>
+                  <RichTextEditor
+                    content={event.description ?? ""}
+                    onChange={setEditDescription}
+                    placeholder="Escribe la descripción de tu evento..."
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Usa las herramientas de formato para personalizar el texto.</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
@@ -306,20 +312,18 @@ export default function EventDetailPage() {
                 <h3 className="text-sm font-semibold text-gray-900 mb-1">Personalización del formulario</h3>
                 <p className="text-xs text-gray-500 mb-3">Colores e imagen que verán tus invitados.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Color primario</label>
-                    <div className="flex items-center gap-2">
-                      <input name="primaryColor" type="color" defaultValue={event.primaryColor ?? "#8B5E3C"} className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer p-0.5" />
-                      <span className="text-xs text-gray-400">Botones y acentos</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Color secundario</label>
-                    <div className="flex items-center gap-2">
-                      <input name="secondaryColor" type="color" defaultValue={event.secondaryColor ?? "#D4AF37"} className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer p-0.5" />
-                      <span className="text-xs text-gray-400">Decoraciones</span>
-                    </div>
-                  </div>
+                  <ColorPickerField
+                    name="primaryColor"
+                    label="Color primario"
+                    defaultValue={event.primaryColor ?? "#8B5E3C"}
+                    description="Botones y acentos"
+                  />
+                  <ColorPickerField
+                    name="secondaryColor"
+                    label="Color secundario"
+                    defaultValue={event.secondaryColor ?? "#D4AF37"}
+                    description="Decoraciones"
+                  />
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Imagen de fondo (Google Drive)</label>
                     <input name="bgImageUrl" type="url" defaultValue={event.bgImageUrl ?? ""} className="input-field" placeholder="https://drive.google.com/file/d/.../view?usp=drive_link" />
@@ -363,7 +367,7 @@ export default function EventDetailPage() {
               </div>
               <div className="flex items-center gap-2 self-start">
                 <button
-                  onClick={() => setEditMode(true)}
+                  onClick={() => { setEditDescription(event.description ?? ""); setEditMode(true); }}
                   className="btn-secondary text-sm flex items-center gap-1"
                 >
                   <Pencil className="w-4 h-4" />

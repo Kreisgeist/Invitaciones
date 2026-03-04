@@ -4,11 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import RichTextEditor, { ColorPickerField } from "@/components/RichTextEditor";
 
 export default function NewEventPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [description, setDescription] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -18,7 +20,7 @@ export default function NewEventPage() {
     const formData = new FormData(e.currentTarget);
     const data = {
       name: formData.get("name") as string,
-      description: formData.get("description") as string,
+      description: description || undefined,
       date: formData.get("date") as string,
       time: formData.get("time") as string,
       location: formData.get("location") as string,
@@ -87,12 +89,12 @@ export default function NewEventPage() {
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             Descripción
           </label>
-          <textarea
-            name="description"
-            className="input-field min-h-[180px] whitespace-pre-wrap"
-            placeholder={"Escribe la descripción de tu evento...\n\nLos saltos de línea y el espaciado que uses aquí se verán exactamente igual en la invitación digital."}
+          <RichTextEditor
+            content=""
+            onChange={setDescription}
+            placeholder="Escribe la descripción de tu evento..."
           />
-          <p className="text-xs text-gray-500 mt-1">Vista previa: el texto se mostrará centrado en la invitación tal como lo escribas aquí, respetando saltos de línea y espaciado.</p>
+          <p className="text-xs text-gray-500 mt-1">Usa las herramientas de formato para personalizar el texto. Se mostrará en la invitación tal como lo definas aquí.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -169,25 +171,19 @@ export default function NewEventPage() {
         <div className="border-t border-gray-200 pt-5">
           <h3 className="text-sm font-semibold text-gray-900 mb-1">Personalización del formulario de invitación</h3>
           <p className="text-xs text-gray-500 mb-4">Estos colores e imagen se aplicarán al formulario que verán tus invitados.</p>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Color primario
-              </label>
-              <div className="flex items-center gap-2">
-                <input name="primaryColor" type="color" defaultValue="#8B5E3C" className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer p-0.5" />
-                <span className="text-xs text-gray-400">Botones y acentos principales</span>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Color secundario
-              </label>
-              <div className="flex items-center gap-2">
-                <input name="secondaryColor" type="color" defaultValue="#D4AF37" className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer p-0.5" />
-                <span className="text-xs text-gray-400">Decoraciones y detalles</span>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <ColorPickerField
+              name="primaryColor"
+              label="Color primario"
+              defaultValue="#8B5E3C"
+              description="Botones y acentos principales"
+            />
+            <ColorPickerField
+              name="secondaryColor"
+              label="Color secundario"
+              defaultValue="#D4AF37"
+              description="Decoraciones y detalles"
+            />
           </div>
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-1.5">

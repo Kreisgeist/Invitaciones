@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
@@ -11,6 +12,7 @@ function LoginForm() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -41,19 +43,19 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-warm">
-      <div className="w-full max-w-md p-8 invitation-card">
-        <div className="text-center mb-8">
+    <div className="min-h-screen flex items-center justify-center bg-bg-warm px-4 sm:px-6">
+      <div className="w-full max-w-md p-6 sm:p-8 invitation-card">
+        <div className="text-center mb-6 sm:mb-8">
           <h1
-            className="text-3xl font-bold text-primary-dark"
+            className="text-2xl sm:text-3xl font-bold text-primary-dark"
             style={{ fontFamily: "Playfair Display, serif" }}
           >
             Invitaciones
           </h1>
-          <p className="text-text-muted mt-2">Panel de administración</p>
+          <p className="text-text-muted mt-2 text-sm sm:text-base">Panel de administración</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-text-main mb-1.5">
               Usuario
@@ -66,6 +68,7 @@ function LoginForm() {
               className="input-field"
               placeholder="Ingresa tu usuario"
               required
+              autoComplete="username"
             />
           </div>
 
@@ -73,15 +76,27 @@ function LoginForm() {
             <label htmlFor="password" className="block text-sm font-medium text-text-main mb-1.5">
               Contraseña
             </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input-field"
-              placeholder="Ingresa tu contraseña"
-              required
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="input-field pr-11"
+                placeholder="Ingresa tu contraseña"
+                required
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-main transition-colors p-0.5"
+                tabIndex={-1}
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+              </button>
+            </div>
           </div>
 
           {error && (

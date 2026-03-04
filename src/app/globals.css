@@ -203,3 +203,20 @@ body {
 .animate-scale-in {
   animation: scaleIn 0.25s ease-out forwards;
 }
+
+/* Rich text description in invitation */
+.prose-invite p {
+  margin-bottom: 0.5em;
+}
+.prose-invite p:last-child {
+  margin-bottom: 0;
+}
+.prose-invite strong {
+  font-weight: 600;
+}
+.prose-invite em {
+  font-style: italic;
+}
+.prose-invite u {
+  text-decoration: underline;
+}
