@@ -485,6 +485,13 @@ function GroupsTab({
   const [newGuestCategory, setNewGuestCategory] = useState<"ADULT" | "CHILD">("ADULT");
   const [saving, setSaving] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
+  const [editingGuestName, setEditingGuestName] = useState("");
+  const [editingGuestSaving, setEditingGuestSaving] = useState(false);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [editingGroupName, setEditingGroupName] = useState("");
+  const [editingGroupNotes, setEditingGroupNotes] = useState("");
+  const [editingGroupSaving, setEditingGroupSaving] = useState(false);
   const toast = useToast();
   const confirm = useConfirm();
 
@@ -614,6 +621,91 @@ function GroupsTab({
     onRefresh();
   };
 
+  const startEditGuest = (guest: Guest) => {
+    setEditingGuestId(guest.id);
+    setEditingGuestName(guest.name);
+  };
+
+  const cancelEditGuest = () => {
+    setEditingGuestId(null);
+    setEditingGuestName("");
+  };
+
+  const saveGuest = async (guest: Guest) => {
+    const name = editingGuestName.trim();
+    if (!name) {
+      toast.error("El nombre del invitado no puede estar vacio");
+      return;
+    }
+
+    setEditingGuestSaving(true);
+    try {
+      const res = await fetch(`/api/guests/${guest.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          groupId: guest.groupId,
+          name,
+          category: guest.category,
+          order: guest.order,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success("Invitado actualizado");
+        cancelEditGuest();
+        onRefresh();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Error al actualizar invitado");
+      }
+    } catch {
+      toast.error("Error de conexion");
+    } finally {
+      setEditingGuestSaving(false);
+    }
+  };
+
+  const startEditGroup = (group: Group) => {
+    setEditingGroupId(group.id);
+    setEditingGroupName(group.name);
+    setEditingGroupNotes(group.notes ?? "");
+  };
+
+  const cancelEditGroup = () => {
+    setEditingGroupId(null);
+    setEditingGroupName("");
+    setEditingGroupNotes("");
+  };
+
+  const saveGroup = async (group: Group) => {
+    const name = editingGroupName.trim();
+    if (!name) {
+      toast.error("El nombre del grupo no puede estar vacío");
+      return;
+    }
+    setEditingGroupSaving(true);
+    try {
+      const res = await fetch(`/api/groups/${group.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId, name, notes: editingGroupNotes.trim() || undefined }),
+      });
+      if (res.ok) {
+        toast.success("Grupo actualizado");
+        cancelEditGroup();
+        onRefresh();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Error al actualizar grupo");
+      }
+    } catch {
+      toast.error("Error de conexión");
+    } finally {
+      setEditingGroupSaving(false);
+    }
+  };
+
   const approveAdditional = async (reqId: string) => {
     setApprovingId(reqId);
     try {
@@ -668,6 +760,40 @@ function GroupsTab({
     return (
       <div key={group.id} className={`bg-white border border-gray-200 rounded-xl overflow-hidden ${dimmed ? "opacity-70" : ""}`}>
         {/* Group header */}
+        {editingGroupId === group.id ? (
+          <div className="p-4 space-y-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Nombre del grupo</label>
+              <input
+                value={editingGroupName}
+                onChange={(e) => setEditingGroupName(e.target.value)}
+                className="input-field"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); saveGroup(group); }
+                  if (e.key === "Escape") { e.preventDefault(); cancelEditGroup(); }
+                }}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Notas internas <span className="text-gray-400">(opcional)</span></label>
+              <textarea
+                value={editingGroupNotes}
+                onChange={(e) => setEditingGroupNotes(e.target.value)}
+                className="input-field min-h-15"
+                placeholder="Ej: Mesa 5, amigos cercanos, etc."
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button onClick={cancelEditGroup} disabled={editingGroupSaving} className="btn-secondary text-sm flex items-center gap-1">
+                <X className="w-4 h-4" /> Cancelar
+              </button>
+              <button onClick={() => saveGroup(group)} disabled={editingGroupSaving || !editingGroupName.trim()} className="btn-primary text-sm flex items-center gap-1">
+                <Save className="w-4 h-4" /> {editingGroupSaving ? "Guardando..." : "Guardar"}
+              </button>
+            </div>
+          </div>
+        ) : (
         <div
           className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"
           onClick={() => setExpandedGroup(isExpanded ? null : group.id)}
@@ -687,15 +813,19 @@ function GroupsTab({
             {group.notes && <StickyNote className="w-4 h-4 text-amber-400 flex-shrink-0" />}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
+            <button onClick={(e) => { e.stopPropagation(); startEditGroup(group); }} className="text-gray-400 hover:text-primary p-1" title="Editar grupo">
+              <Pencil className="w-4 h-4" />
+            </button>
             <button onClick={(e) => { e.stopPropagation(); deleteGroup(group.id); }} className="text-gray-400 hover:text-red-500 p-1" title="Eliminar grupo">
               <Trash2 className="w-4 h-4" />
             </button>
             {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
           </div>
         </div>
+        )}
 
         {/* Expanded content */}
-        {isExpanded && (
+        {isExpanded && editingGroupId !== group.id && (
           <div className="border-t border-gray-100 p-4 space-y-4">
             {group.notes && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
@@ -708,16 +838,67 @@ function GroupsTab({
               <div className="space-y-2">
                 {group.guests.map((guest) => (
                   <div key={guest.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       {guestStatusDot(guest.id, group.id)}
-                      <span className="text-sm font-medium">{guest.name}</span>
+                      {editingGuestId === guest.id ? (
+                        <input
+                          value={editingGuestName}
+                          onChange={(e) => setEditingGuestName(e.target.value)}
+                          className="input-field h-8 text-sm py-1"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              saveGuest(guest);
+                            }
+                            if (e.key === "Escape") {
+                              e.preventDefault();
+                              cancelEditGuest();
+                            }
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        <span className="text-sm font-medium truncate">{guest.name}</span>
+                      )}
                       <span className={`text-xs px-2 py-0.5 rounded-full ${guest.category === "CHILD" ? "bg-blue-100 text-blue-700" : "bg-gray-200 text-gray-600"}`}>
                         {guest.category === "CHILD" ? "Menor" : "Adulto"}
                       </span>
                     </div>
-                    <button onClick={() => deleteGuest(guest.id)} className="text-gray-400 hover:text-red-500">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-2 ml-3">
+                      {editingGuestId === guest.id ? (
+                        <>
+                          <button
+                            onClick={() => saveGuest(guest)}
+                            disabled={editingGuestSaving}
+                            className="text-gray-400 hover:text-green-600 disabled:opacity-50"
+                            title="Guardar nombre"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={cancelEditGuest}
+                            disabled={editingGuestSaving}
+                            className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                            title="Cancelar edición"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => startEditGuest(guest)}
+                            className="text-gray-400 hover:text-primary"
+                            title="Editar nombre"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => deleteGuest(guest.id)} className="text-gray-400 hover:text-red-500" title="Eliminar invitado">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
