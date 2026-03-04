@@ -44,7 +44,8 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(event, { status: 201 });
-  } catch {
+  } catch (err) {
+    console.error("Error creating event:", err);
     return NextResponse.json(
       { error: "Error al crear el evento" },
       { status: 500 }

@@ -83,7 +83,8 @@ export async function PUT(
     });
 
     return NextResponse.json(event);
-  } catch {
+  } catch (err) {
+    console.error("Error updating event:", err);
     return NextResponse.json(
       { error: "Error al actualizar el evento" },
       { status: 500 }
@@ -104,7 +105,8 @@ export async function DELETE(
   try {
     await prisma.event.delete({ where: { id } });
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error("Error deleting event:", err);
     return NextResponse.json(
       { error: "Error al eliminar el evento" },
       { status: 500 }
