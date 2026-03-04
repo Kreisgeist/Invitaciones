@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  date        DateTime
+  time        String
+  location    String
+  mapUrl      String?  @db.Text
+  dressCode   String?
+  maxGuests      Int      @default(200)
+  primaryColor   String?  @default("#8B5E3C")
+  secondaryColor String?  @default("#D4AF37")
+  bgImageUrl     String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  groups Group[]
+  rounds Round[]
+}
+
+model Group {
+  id      String  @id @default(cuid())
+  eventId String
+  name    String
+  notes   String? @db.Text
+
+  event  Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  guests Guest[]
+  links  InvitationLink[]
+
+  @@index([eventId])
+}
+
+model Guest {
+  id       String        @id @default(cuid())
+  groupId  String
+  name     String
+  category GuestCategory @default(ADULT)
+  order    Int           @default(0)
+
+  group          Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  guestResponses GuestResponse[]
+
+  @@index([groupId])
+}
+
+enum GuestCategory {
+  ADULT
+  CHILD
+}
+
+model Round {
+  id                     String      @id @default(cuid())
+  eventId                String
+  name                   String
+  opensAt                DateTime
+  closesAt               DateTime
+  status                 RoundStatus @default(DRAFT)
+  allowAdditionalTickets Boolean     @default(false)
+  createdAt              DateTime    @default(now())
+
+  event Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  links InvitationLink[]
+
+  @@index([eventId])
+}
+
+enum RoundStatus {
+  DRAFT
+  OPEN
+  CLOSED
+}
+
+model InvitationLink {
+  id        String    @id @default(cuid())
+  roundId   String
+  groupId   String
+  token     String    @unique
+  used      Boolean   @default(false)
+  usedAt    DateTime?
+  expiresAt DateTime
+
+  round    Round     @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  group    Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  response Response?
+
+  @@unique([roundId, groupId])
+  @@index([token])
+}
+
+model Response {
+  id               String         @id @default(cuid())
+  invitationLinkId String         @unique
+  status           ResponseStatus
+  respondedAt      DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  invitationLink          InvitationLink          @relation(fields: [invitationLinkId], references: [id], onDelete: Cascade)
+  guestResponses          GuestResponse[]
+  additionalGuestRequests AdditionalGuestRequest[]
+}
+
+enum ResponseStatus {
+  ACCEPTED
+  DECLINED
+}
+
+model GuestResponse {
+  id           String     @id @default(cuid())
+  responseId   String
+  guestId      String
+  attending    Boolean
+  updatedName  String?
+  menuChoice   MenuChoice @default(ADULT)
+  dietaryNotes String?    @db.Text
+
+  response Response @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  guest    Guest    @relation(fields: [guestId], references: [id], onDelete: Cascade)
+
+  @@unique([responseId, guestId])
+}
+
+enum MenuChoice {
+  ADULT
+  CHILD
+}
+
+model AdditionalGuestRequest {
+  id         String        @id @default(cuid())
+  responseId String
+  fullName   String
+  category   GuestCategory @default(ADULT)
+  menuChoice MenuChoice    @default(ADULT)
+  approved   Boolean       @default(false)
+
+  response Response @relation(fields: [responseId], references: [id], onDelete: Cascade)
+
+  @@index([responseId])
+}

@@ -1,0 +1,45 @@
+name: Database Migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Migration action'
+        required: true
+        default: 'deploy'
+        type: choice
+        options:
+          - deploy
+          - push
+          - reset
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run migration (${{ github.event.inputs.action }})
+        run: |
+          if [ "${{ github.event.inputs.action }}" = "deploy" ]; then
+            npx prisma migrate deploy
+          elif [ "${{ github.event.inputs.action }}" = "push" ]; then
+            npx prisma db push
+          elif [ "${{ github.event.inputs.action }}" = "reset" ]; then
+            npx prisma migrate reset --force
+          fi
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
