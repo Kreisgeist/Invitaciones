@@ -205,6 +205,11 @@ body {
 }
 
 /* Rich text description in invitation */
+.prose-invite {
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.7;
+}
 .prose-invite p {
   margin-bottom: 0.5em;
 }
@@ -213,10 +218,26 @@ body {
 }
 .prose-invite strong {
   font-weight: 600;
+  color: var(--text-main);
 }
 .prose-invite em {
   font-style: italic;
 }
 .prose-invite u {
   text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.prose-invite hr {
+  border: none;
+  border-top: 1px solid var(--accent);
+  width: 40%;
+  margin: 1em auto;
+  opacity: 0.5;
+}
+.prose-invite span[style*="font-family"] {
+  display: inline;
+}
+.prose-invite span[style*="font-size"] {
+  display: inline;
+  line-height: 1.3;
 }

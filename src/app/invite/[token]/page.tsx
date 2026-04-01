@@ -581,36 +581,24 @@ export default function InvitationPage({
       <div className="max-w-lg mx-auto space-y-6">
         {/* Header card */}
         <div className="invitation-card p-8 text-center animate-fade-in-up">
-          <p className="text-accent text-sm font-medium uppercase tracking-widest mb-2">
-            Estás invitado/a
-          </p>
-          <h1
-            className="text-3xl md:text-4xl font-bold text-text-main mb-2"
-            style={{ fontFamily: "Playfair Display, serif" }}
-          >
-            {data.event.name}
-          </h1>
-          <div className="divider-ornament">
-            <span className="text-accent">✦</span>
-          </div>
           {data.event.description && (
             <div
-              className="text-text-muted mb-4 leading-relaxed text-center prose-invite"
+              className="prose-invite mb-4"
               dangerouslySetInnerHTML={{ __html: data.event.description }}
             />
           )}
 
           <div className="space-y-2 text-sm text-text-muted">
             <div className="flex items-center justify-center gap-2">
-              <CalendarDays className="w-4 h-4 text-accent" />
+              <CalendarDays className="w-4 h-4 text-accent shrink-0" />
               <span>{formatDate(data.event.date, true)}</span>
             </div>
             <div className="flex items-center justify-center gap-2">
-              <Clock className="w-4 h-4 text-accent" />
+              <Clock className="w-4 h-4 text-accent shrink-0" />
               <span>{formatTime(data.event.time)}</span>
             </div>
             <div className="flex items-center justify-center gap-2">
-              <MapPin className="w-4 h-4 text-accent" />
+              <MapPin className="w-4 h-4 text-accent shrink-0" />
               <span>{data.event.location}</span>
             </div>
             {data.event.mapUrl && (
@@ -620,13 +608,13 @@ export default function InvitationPage({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-text-muted hover:text-text-main bg-bg-warm border border-border/50 rounded-full px-3 py-1 text-sm font-medium transition-colors"
               >
-                <ExternalLink className="w-3.5 h-3.5" />
+                <ExternalLink className="w-4 h-4 shrink-0" />
                 Ver en Google Maps
               </a>
             )}
             {data.event.dressCode && (
               <div className="flex items-center justify-center gap-2">
-                <Shirt className="w-4 h-4 text-accent" />
+                <Shirt className="w-4 h-4 text-accent shrink-0" />
                 <span>{data.event.dressCode}</span>
               </div>
             )}

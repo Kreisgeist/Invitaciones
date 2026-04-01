@@ -4,7 +4,38 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
-import { Bold, Italic, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
+import { TextStyle, FontFamily, FontSize } from "@tiptap/extension-text-style";
+import HorizontalRule from "@tiptap/extension-horizontal-rule";
+import {
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Minus,
+} from "lucide-react";
+
+const FONT_FAMILIES = [
+  { label: "Normal", value: "" },
+  { label: "Elegante", value: "Cormorant Garamond" },
+  { label: "Serif", value: "Lora" },
+  { label: "Títulos", value: "Playfair Display" },
+  { label: "Script", value: "Pinyon Script" },
+  { label: "Script 2", value: "Great Vibes" },
+  { label: "Script 3", value: "Dancing Script" },
+];
+
+const FONT_SIZES = [
+  { label: "XS", value: "0.75rem" },
+  { label: "S", value: "0.875rem" },
+  { label: "Normal", value: "" },
+  { label: "L", value: "1.25rem" },
+  { label: "XL", value: "1.5rem" },
+  { label: "2XL", value: "2rem" },
+  { label: "3XL", value: "2.5rem" },
+  { label: "4XL", value: "3rem" },
+];
 
 interface RichTextEditorProps {
   content: string;
@@ -16,7 +47,6 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        // Disable features we don't need
         codeBlock: false,
         code: false,
         blockquote: false,
@@ -27,15 +57,19 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
         orderedList: false,
       }),
       Underline,
+      TextStyle,
+      FontFamily,
+      FontSize,
+      HorizontalRule,
       TextAlign.configure({
-        types: ["paragraph"],
+        types: ["paragraph", "horizontalRule"],
       }),
     ],
     content,
     editorProps: {
       attributes: {
         class:
-          "min-h-[160px] px-3 py-2 text-sm leading-relaxed focus:outline-none prose prose-sm max-w-none [&_p]:my-1",
+          "min-h-[220px] px-4 py-3 text-sm leading-relaxed focus:outline-none prose prose-sm max-w-none [&_p]:my-1",
       },
     },
     onUpdate: ({ editor }) => {
@@ -52,10 +86,57 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
         : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
     }`;
 
+  const currentFontFamily = editor.getAttributes("textStyle").fontFamily || "";
+  const currentFontSize = editor.getAttributes("textStyle").fontSize || "";
+
   return (
     <div className="border border-gray-300 rounded-lg overflow-hidden focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-300 bg-white">
       {/* Toolbar */}
-      <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-gray-200 bg-gray-50">
+      <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b border-gray-200 bg-gray-50">
+        {/* Font family */}
+        <select
+          value={currentFontFamily}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val) {
+              editor.chain().focus().setFontFamily(val).run();
+            } else {
+              editor.chain().focus().unsetFontFamily().run();
+            }
+          }}
+          className="text-xs border border-gray-300 rounded px-1.5 py-1 bg-white text-gray-700 max-w-[100px]"
+          title="Tipografía"
+        >
+          {FONT_FAMILIES.map((f) => (
+            <option key={f.value} value={f.value}>
+              {f.label}
+            </option>
+          ))}
+        </select>
+
+        {/* Font size */}
+        <select
+          value={currentFontSize}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val) {
+              (editor.chain().focus() as any).setFontSize(val).run();
+            } else {
+              (editor.chain().focus() as any).unsetFontSize().run();
+            }
+          }}
+          className="text-xs border border-gray-300 rounded px-1.5 py-1 bg-white text-gray-700 max-w-[80px]"
+          title="Tamaño"
+        >
+          {FONT_SIZES.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+
+        <div className="w-px h-5 bg-gray-300 mx-0.5" />
+
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleBold().run()}
@@ -81,7 +162,7 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
           <UnderlineIcon className="w-4 h-4" />
         </button>
 
-        <div className="w-px h-5 bg-gray-300 mx-1" />
+        <div className="w-px h-5 bg-gray-300 mx-0.5" />
 
         <button
           type="button"
@@ -107,13 +188,24 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
         >
           <AlignRight className="w-4 h-4" />
         </button>
+
+        <div className="w-px h-5 bg-gray-300 mx-0.5" />
+
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().setHorizontalRule().run()}
+          className={btnClass(false)}
+          title="Línea decorativa"
+        >
+          <Minus className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Editor area */}
       <div className="relative">
         <EditorContent editor={editor} />
         {!content && placeholder && editor.isEmpty && (
-          <div className="absolute top-2 left-3 text-gray-400 text-sm pointer-events-none">
+          <div className="absolute top-3 left-4 text-gray-400 text-sm pointer-events-none">
             {placeholder}
           </div>
         )}
