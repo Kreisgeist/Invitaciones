@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -14,6 +15,8 @@ import {
   AlignCenter,
   AlignRight,
   Minus,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 const FONT_FAMILIES = [
@@ -44,6 +47,7 @@ interface RichTextEditorProps {
 }
 
 export default function RichTextEditor({ content, onChange, placeholder }: RichTextEditorProps) {
+  const [showPreview, setShowPreview] = useState(false);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -199,10 +203,21 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
         >
           <Minus className="w-4 h-4" />
         </button>
+
+        <div className="w-px h-5 bg-gray-300 mx-0.5" />
+
+        <button
+          type="button"
+          onClick={() => setShowPreview((v) => !v)}
+          className={btnClass(showPreview)}
+          title={showPreview ? "Ocultar vista previa" : "Vista previa"}
+        >
+          {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+        </button>
       </div>
 
       {/* Editor area */}
-      <div className="relative">
+      <div className={showPreview ? "hidden" : "relative"}>
         <EditorContent editor={editor} />
         {!content && placeholder && editor.isEmpty && (
           <div className="absolute top-3 left-4 text-gray-400 text-sm pointer-events-none">
@@ -210,6 +225,26 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
           </div>
         )}
       </div>
+
+      {/* Live preview */}
+      {showPreview && (
+        <div className="border-t border-gray-200">
+          <div className="px-3 py-1.5 bg-gray-50 text-xs text-gray-500 font-medium flex items-center gap-1.5">
+            <Eye className="w-3 h-3" />
+            Vista previa — así se verá en la invitación
+          </div>
+          <div
+            className="bg-[#faf8f5] px-8 py-8 min-h-[220px] flex items-center justify-center"
+          >
+            <div className="bg-white/90 backdrop-blur rounded-2xl shadow-lg border border-[#e8e0d4] p-8 max-w-sm w-full text-center">
+              <div
+                className="prose-invite"
+                dangerouslySetInnerHTML={{ __html: editor.getHTML() }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
