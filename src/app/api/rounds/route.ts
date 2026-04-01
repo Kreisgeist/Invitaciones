@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         eventId: parsed.data.eventId,
         opensAt,
         closesAt,
-        status: "DRAFT",
+        status: (parsed.data as any).status ?? "DRAFT",
         allowAdditionalTickets: parsed.data.allowAdditionalTickets ?? false,
         links: {
           create: groupsWithGuests.map((group) => ({

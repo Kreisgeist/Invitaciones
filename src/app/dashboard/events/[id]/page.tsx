@@ -1082,20 +1082,44 @@ function RoundsTab({
   const [showNewRound, setShowNewRound] = useState(false);
   const [saving, setSaving] = useState(false);
   const [expandedRound, setExpandedRound] = useState<string | null>(null);
+  const [defaultOpensAt, setDefaultOpensAt] = useState("");
+  const [defaultClosesAt, setDefaultClosesAt] = useState("");
   const toast = useToast();
   const confirm = useConfirm();
+
+  // Calculate default dates when component mounts or showNewRound changes
+  useEffect(() => {
+    if (showNewRound) {
+      const now = new Date();
+      // Format as datetime-local (YYYY-MM-DDTHH:mm)
+      const opensAt = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 16);
+      
+      // Add 14 days (2 weeks)
+      const closesDate = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+      const closesAt = new Date(closesDate.getTime() - closesDate.getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 16);
+      
+      setDefaultOpensAt(opensAt);
+      setDefaultClosesAt(closesAt);
+    }
+  }, [showNewRound]);
 
   const createRound = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSaving(true);
 
     const formData = new FormData(e.currentTarget);
+    const roundId = (Math.random() + 1).toString(36).substring(7);
     const data = {
       eventId,
       name: formData.get("name") as string,
       opensAt: formData.get("opensAt") as string,
       closesAt: formData.get("closesAt") as string,
       allowAdditionalTickets: formData.get("allowAdditionalTickets") === "on",
+      status: "OPEN",
     };
 
     try {
@@ -1107,7 +1131,7 @@ function RoundsTab({
 
       if (res.ok) {
         setShowNewRound(false);
-        toast.success("Ronda creada exitosamente");
+        toast.success("Ronda creada y abierta automáticamente");
         onRefresh();
       } else {
         const err = await res.json();
@@ -1214,6 +1238,7 @@ function RoundsTab({
                 name="opensAt"
                 type="datetime-local"
                 className="input-field"
+                defaultValue={defaultOpensAt}
                 required
               />
             </div>
@@ -1225,6 +1250,7 @@ function RoundsTab({
                 name="closesAt"
                 type="datetime-local"
                 className="input-field"
+                defaultValue={defaultClosesAt}
                 required
               />
             </div>
