@@ -229,10 +229,29 @@ body {
 }
 .prose-invite hr {
   border: none;
-  border-top: 1px solid var(--color-accent);
-  width: 40%;
+  margin: 0;
+  padding: 0;
+  height: 0;
+  display: none;
+}
+.prose-invite .divider-ornament {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   margin: 1em auto;
-  opacity: 0.5;
+  width: 70%;
+}
+.prose-invite .divider-ornament::before,
+.prose-invite .divider-ornament::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+}
+.prose-invite .divider-ornament span {
+  color: var(--color-accent);
+  font-size: 0.7rem;
+  line-height: 1;
 }
 .prose-invite span[style*="font-family"] {
   display: inline;

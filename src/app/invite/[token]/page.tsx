@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, use } from "react";
 import { formatDate, formatTime, getDirectImageUrl } from "@/lib/utils";
+import { renderInviteHtml } from "@/lib/renderInviteHtml";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmModal";
 import {
@@ -584,7 +585,7 @@ export default function InvitationPage({
           {data.event.description && (
             <div
               className="prose-invite mb-4"
-              dangerouslySetInnerHTML={{ __html: data.event.description }}
+              dangerouslySetInnerHTML={{ __html: renderInviteHtml(data.event.description) }}
             />
           )}
 

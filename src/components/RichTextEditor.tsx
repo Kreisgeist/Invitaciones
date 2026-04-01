@@ -18,6 +18,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
+import { renderInviteHtml } from "@/lib/renderInviteHtml";
 
 const FONT_FAMILIES = [
   { label: "Normal", value: "" },
@@ -239,7 +240,7 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
             <div className="bg-white/90 backdrop-blur rounded-2xl shadow-lg border border-[#e8e0d4] p-8 max-w-sm w-full text-center">
               <div
                 className="prose-invite"
-                dangerouslySetInnerHTML={{ __html: editor.getHTML() }}
+                dangerouslySetInnerHTML={{ __html: renderInviteHtml(editor.getHTML()) }}
               />
             </div>
           </div>
