@@ -1087,6 +1087,50 @@ function RoundsTab({
   const toast = useToast();
   const confirm = useConfirm();
 
+  // Helper to calculate round statistics for report
+  const calculateRoundStats = (round: Round) => {
+    const confirmedGroups = (round.links ?? []).filter(l => l.response?.status === "ACCEPTED") || [];
+    const declinedGroups = (round.links ?? []).filter(l => l.response?.status === "DECLINED") || [];
+    const pendingGroups = (round.links ?? []).filter(l => !l.response) || [];
+    const respondedGroups = confirmedGroups.length + declinedGroups.length;
+    
+    let totalAttendingGuests = 0;
+    let totalDeclinedGuests = 0;
+    let totalMenusAdult = 0;
+    let totalMenusChild = 0;
+    let additionalApprovedCount = 0;
+    let additionalPendingCount = 0;
+    
+    confirmedGroups.forEach(link => {
+      if (link.response) {
+        totalAttendingGuests += link.response.guestResponses.filter(gr => gr.attending).length;
+        totalDeclinedGuests += link.response.guestResponses.filter(gr => !gr.attending).length;
+        link.response.guestResponses.forEach(gr => {
+          if (gr.attending) {
+            if (gr.menuChoice === "CHILD") totalMenusChild++;
+            else totalMenusAdult++;
+          }
+        });
+        additionalApprovedCount += link.response.additionalGuestRequests.filter(ag => ag.approved).length;
+        additionalPendingCount += link.response.additionalGuestRequests.filter(ag => !ag.approved).length;
+      }
+    });
+    
+    return {
+      confirmedGroups,
+      declinedGroups,
+      pendingGroups,
+      respondedGroups,
+      respondedPercentage: respondedGroups > 0 ? Math.round((respondedGroups / (round.links?.length || 1)) * 100) : 0,
+      totalAttendingGuests,
+      totalDeclinedGuests,
+      totalMenusAdult,
+      totalMenusChild,
+      additionalApprovedCount,
+      additionalPendingCount,
+    };
+  };
+
   // Calculate default dates when component mounts or showNewRound changes
   useEffect(() => {
     if (showNewRound) {
@@ -1535,6 +1579,115 @@ function RoundsTab({
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Round Report (only for CLOSED rounds with responses) */}
+                {round.status === "CLOSED" && (round.links ?? []).some(l => l.response) && (
+                  <div className="border-t border-gray-100 p-4 bg-blue-50/50">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-blue-600" />
+                      Reporte de Ronda
+                    </h4>
+                    {(() => {
+                      const stats = calculateRoundStats(round);
+                      return (
+                        <div className="space-y-4">
+                          {/* Summary cards */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div className="bg-white border border-gray-200 rounded-lg p-3">
+                              <p className="text-xs text-gray-600 mb-1">Respuestas</p>
+                              <p className="text-xl font-bold text-gray-900">{stats.respondedGroups}/{round.links?.length || 0}</p>
+                              <p className="text-xs text-gray-500 mt-1">{stats.respondedPercentage}%</p>
+                            </div>
+                            <div className="bg-white border border-gray-200 rounded-lg p-3">
+                              <p className="text-xs text-gray-600 mb-1">Confirmados</p>
+                              <p className="text-xl font-bold text-green-600">{stats.confirmedGroups.length}</p>
+                              <p className="text-xs text-gray-500 mt-1">grupo(s)</p>
+                            </div>
+                            <div className="bg-white border border-gray-200 rounded-lg p-3">
+                              <p className="text-xs text-gray-600 mb-1">Asistentes</p>
+                              <p className="text-xl font-bold text-green-600">{stats.totalAttendingGuests}</p>
+                              <p className="text-xs text-gray-500 mt-1">confirmado(s)</p>
+                            </div>
+                            <div className="bg-white border border-gray-200 rounded-lg p-3">
+                              <p className="text-xs text-gray-600 mb-1">Menús</p>
+                              <p className="text-xl font-bold text-gray-900">{stats.totalMenusAdult + stats.totalMenusChild}</p>
+                              <p className="text-xs text-gray-500 mt-1">{stats.totalMenusAdult}A / {stats.totalMenusChild}N</p>
+                            </div>
+                          </div>
+
+                          {/* Group breakdown */}
+                          {stats.confirmedGroups.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-700 mb-2 uppercase">Grupos que asistirán</p>
+                              <div className="space-y-2">
+                                {stats.confirmedGroups.map(link => (
+                                  <div key={link.id} className="bg-white border border-gray-200 rounded-lg p-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="font-medium text-sm">{link.group.name}</span>
+                                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Confirmado</span>
+                                    </div>
+                                    {link.response && (
+                                      <div className="text-xs text-gray-600 space-y-1">
+                                        <p>{link.response.guestResponses.filter(gr => gr.attending).length} asistente(s):</p>
+                                        <ul className="ml-3 space-y-0.5">
+                                          {link.response.guestResponses.filter(gr => gr.attending).map((gr, i) => (
+                                            <li key={i}>• {gr.updatedName || gr.guest.name} ({gr.menuChoice === "CHILD" ? "menú infantil" : "menú adulto"})</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Pending groups */}
+                          {stats.pendingGroups.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-700 mb-2 uppercase">Grupos sin respuesta</p>
+                              <div className="space-y-2">
+                                {stats.pendingGroups.map(link => (
+                                  <div key={link.id} className="bg-white border border-yellow-200 rounded-lg p-3">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-medium text-sm">{link.group.name}</span>
+                                      <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Pendiente</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Declined groups */}
+                          {stats.declinedGroups.length > 0 && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-700 mb-2 uppercase">Grupos que declinaron</p>
+                              <div className="space-y-2">
+                                {stats.declinedGroups.map(link => (
+                                  <div key={link.id} className="bg-white border border-red-200 rounded-lg p-3">
+                                    <span className="text-sm font-medium text-gray-900">{link.group.name}</span>
+                                    <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full ml-2">Declinado</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Additional tickets */}
+                          {(stats.additionalApprovedCount > 0 || stats.additionalPendingCount > 0) && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-700 mb-2 uppercase">Boletos adicionales</p>
+                              <p className="text-xs text-gray-600">
+                                <span className="text-green-600 font-medium">{stats.additionalApprovedCount}</span> aprobado(s) · <span className="text-amber-600 font-medium">{stats.additionalPendingCount}</span> pendiente(s)
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
