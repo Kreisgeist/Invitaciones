@@ -43,6 +43,7 @@ export const roundSchema = z.object({
   opensAt: z.string().min(1, "La fecha de apertura es requerida"),
   closesAt: z.string().min(1, "La fecha de cierre es requerida"),
   allowAdditionalTickets: z.boolean().default(false),
+  status: z.enum(["DRAFT", "OPEN", "CLOSED"]).default("DRAFT").optional(),
 });
 
 export type RoundInput = z.infer<typeof roundSchema>;
