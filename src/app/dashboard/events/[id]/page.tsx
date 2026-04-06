@@ -490,6 +490,7 @@ function GroupsTab({
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
   const [editingGuestName, setEditingGuestName] = useState("");
+  const [editingGuestCategory, setEditingGuestCategory] = useState<"ADULT" | "CHILD">("ADULT");
   const [editingGuestSaving, setEditingGuestSaving] = useState(false);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingGroupName, setEditingGroupName] = useState("");
@@ -627,11 +628,13 @@ function GroupsTab({
   const startEditGuest = (guest: Guest) => {
     setEditingGuestId(guest.id);
     setEditingGuestName(guest.name);
+    setEditingGuestCategory(guest.category);
   };
 
   const cancelEditGuest = () => {
     setEditingGuestId(null);
     setEditingGuestName("");
+    setEditingGuestCategory("ADULT");
   };
 
   const saveGuest = async (guest: Guest) => {
@@ -649,7 +652,7 @@ function GroupsTab({
         body: JSON.stringify({
           groupId: guest.groupId,
           name,
-          category: guest.category,
+          category: editingGuestCategory,
           order: guest.order,
         }),
       });
@@ -863,9 +866,24 @@ function GroupsTab({
                       ) : (
                         <span className="text-sm font-medium truncate">{guest.name}</span>
                       )}
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${guest.category === "CHILD" ? "bg-blue-100 text-blue-700" : "bg-gray-200 text-gray-600"}`}>
-                        {guest.category === "CHILD" ? "Menor" : "Adulto"}
-                      </span>
+                      {editingGuestId === guest.id ? (
+                        <button
+                          type="button"
+                          onClick={() => setEditingGuestCategory((c) => c === "ADULT" ? "CHILD" : "ADULT")}
+                          className={`text-xs px-2 py-0.5 rounded-full cursor-pointer transition-colors ${
+                            editingGuestCategory === "CHILD"
+                              ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                              : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+                          }`}
+                          title="Clic para cambiar categoría"
+                        >
+                          {editingGuestCategory === "CHILD" ? "Menor" : "Adulto"} ↔
+                        </button>
+                      ) : (
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${guest.category === "CHILD" ? "bg-blue-100 text-blue-700" : "bg-gray-200 text-gray-600"}`}>
+                          {guest.category === "CHILD" ? "Menor" : "Adulto"}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 ml-3">
                       {editingGuestId === guest.id ? (
