@@ -110,6 +110,8 @@ interface EventData {
 interface Stats {
   totalGroups: number;
   totalGuests: number;
+  totalAdults: number;
+  totalChildren: number;
   confirmedGroups: number;
   declinedGroups: number;
   pendingGroups: number;
@@ -1719,7 +1721,7 @@ function StatsTab({
     {
       label: "Total Invitados",
       value: stats.totalGuests,
-      sub: `${stats.totalGroups} grupo(s)`,
+      sub: `${stats.totalAdults} adulto(s) · ${stats.totalChildren} menor(es) · ${stats.totalGroups} grupo(s)`,
       color: "bg-blue-50 text-blue-700 border-blue-200",
     },
     {

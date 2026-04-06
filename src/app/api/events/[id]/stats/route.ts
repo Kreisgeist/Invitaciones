@@ -54,10 +54,10 @@ export async function GET(
 
   // Compute stats
   const totalGroups = event.groups.length;
-  const totalGuests = event.groups.reduce(
-    (sum, g) => sum + g.guests.length,
-    0
-  );
+  const allGuests = event.groups.flatMap((g) => g.guests);
+  const totalGuests = allGuests.length;
+  const totalAdults = allGuests.filter((g) => g.category === "ADULT").length;
+  const totalChildren = allGuests.filter((g) => g.category === "CHILD").length;
 
   // Get responses from all rounds
   const allResponses = event.rounds.flatMap((r) =>
@@ -147,6 +147,8 @@ export async function GET(
   return NextResponse.json({
     totalGroups,
     totalGuests,
+    totalAdults,
+    totalChildren,
     confirmedGroups: confirmedResponses.length,
     declinedGroups: declinedResponses.length,
     pendingGroups,
