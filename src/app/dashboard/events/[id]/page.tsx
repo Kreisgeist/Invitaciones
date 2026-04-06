@@ -436,6 +436,7 @@ export default function EventDetailPage() {
         <RoundsTab
           eventId={eventId}
           rounds={event.rounds}
+          groups={event.groups}
           onRefresh={() => {
             loadEvent();
             loadStats();
@@ -1071,12 +1072,14 @@ function GroupsTab({
 function RoundsTab({
   eventId,
   rounds,
+  groups,
   onRefresh,
   copiedToken,
   onCopyLink,
 }: {
   eventId: string;
   rounds: Round[];
+  groups: Group[];
   onRefresh: () => void;
   copiedToken: string | null;
   onCopyLink: (token: string) => void;
@@ -1084,6 +1087,13 @@ function RoundsTab({
   const [showNewRound, setShowNewRound] = useState(false);
   const [saving, setSaving] = useState(false);
   const [expandedRound, setExpandedRound] = useState<string | null>(null);
+  const [expandedLinkGroup, setExpandedLinkGroup] = useState<string | null>(null);
+
+  const groupsById = useMemo(() => {
+    const map = new Map<string, Group>();
+    groups.forEach((g) => map.set(g.id, g));
+    return map;
+  }, [groups]);
   const [defaultOpensAt, setDefaultOpensAt] = useState("");
   const [defaultClosesAt, setDefaultClosesAt] = useState("");
   const toast = useToast();
@@ -1427,57 +1437,88 @@ function RoundsTab({
                       Enlaces de invitación
                     </h4>
                     <div className="space-y-2">
-                      {(round.links ?? []).map((link) => (
-                        <div
-                          key={link.id}
-                          className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <span className="text-sm font-medium truncate">
-                              {link.group.name}
-                            </span>
-                            {link.response ? (
-                              <span
-                                className={`text-xs px-2 py-0.5 rounded-full ${
-                                  link.response.status === "ACCEPTED"
-                                    ? "bg-green-100 text-green-700"
-                                    : "bg-red-100 text-red-700"
-                                }`}
+                      {(round.links ?? []).map((link) => {
+                        const groupGuests = groupsById.get(link.group.id)?.guests ?? [];
+                        const isLinkExpanded = expandedLinkGroup === link.id;
+                        return (
+                          <div key={link.id}>
+                            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50">
+                              <div
+                                className="flex items-center gap-3 min-w-0 cursor-pointer flex-1"
+                                onClick={() => setExpandedLinkGroup(isLinkExpanded ? null : link.id)}
                               >
-                                {link.response.status === "ACCEPTED"
-                                  ? "Confirmado"
-                                  : "Declinado"}
-                              </span>
-                            ) : (
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">
-                                Pendiente
-                              </span>
+                                {isLinkExpanded ? (
+                                  <ChevronUp className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                ) : (
+                                  <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                )}
+                                <span className="text-sm font-medium truncate">
+                                  {link.group.name}
+                                </span>
+                                <span className="text-xs text-gray-400">
+                                  {groupGuests.length} inv.
+                                </span>
+                                {link.response ? (
+                                  <span
+                                    className={`text-xs px-2 py-0.5 rounded-full ${
+                                      link.response.status === "ACCEPTED"
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-red-100 text-red-700"
+                                    }`}
+                                  >
+                                    {link.response.status === "ACCEPTED"
+                                      ? "Confirmado"
+                                      : "Declinado"}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">
+                                    Pendiente
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => onCopyLink(link.token)}
+                                  className="text-gray-500 hover:text-primary p-1"
+                                  title="Copiar enlace"
+                                >
+                                  {copiedToken === link.token ? (
+                                    <Check className="w-4 h-4 text-green-500" />
+                                  ) : (
+                                    <Copy className="w-4 h-4" />
+                                  )}
+                                </button>
+                                <a
+                                  href={`/invite/${link.token}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-gray-500 hover:text-primary p-1"
+                                  title="Abrir enlace"
+                                >
+                                  <ExternalLink className="w-4 h-4" />
+                                </a>
+                              </div>
+                            </div>
+                            {isLinkExpanded && groupGuests.length > 0 && (
+                              <div className="ml-8 mr-3 mb-1 mt-1 border-l-2 border-gray-200 pl-3 space-y-0.5">
+                                {groupGuests.map((g) => (
+                                  <div key={g.id} className="flex items-center gap-2 text-xs text-gray-600 py-0.5">
+                                    <Users className="w-3 h-3 text-gray-400" />
+                                    <span>{g.name}</span>
+                                    <span className={`px-1.5 py-0 rounded text-[10px] font-medium ${
+                                      g.category === "CHILD"
+                                        ? "bg-blue-50 text-blue-600"
+                                        : "bg-gray-100 text-gray-500"
+                                    }`}>
+                                      {g.category === "CHILD" ? "Menor" : "Adulto"}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
                             )}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => onCopyLink(link.token)}
-                              className="text-gray-500 hover:text-primary p-1"
-                              title="Copiar enlace"
-                            >
-                              {copiedToken === link.token ? (
-                                <Check className="w-4 h-4 text-green-500" />
-                              ) : (
-                                <Copy className="w-4 h-4" />
-                              )}
-                            </button>
-                            <a
-                              href={`/invite/${link.token}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-gray-500 hover:text-primary p-1"
-                              title="Abrir enlace"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     {/* Response details */}
