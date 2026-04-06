@@ -445,7 +445,7 @@ export default function EventDetailPage() {
           onCopyLink={copyLink}
         />
       )}
-      {activeTab === "stats" && <StatsTab stats={stats} onRefresh={loadStats} />}
+      {activeTab === "stats" && <StatsTab stats={stats} groups={event.groups} onRefresh={loadStats} />}
     </div>
   );
 }
@@ -1745,11 +1745,15 @@ function RoundsTab({
 // ─── Stats Tab ───────────────────────────────────────────────
 function StatsTab({
   stats,
+  groups,
   onRefresh,
 }: {
   stats: Stats | null;
+  groups: Group[];
   onRefresh: () => void;
 }) {
+  const [showGuestBreakdown, setShowGuestBreakdown] = useState(false);
+
   if (!stats) {
     return (
       <div className="flex items-center justify-center h-40">
@@ -1858,6 +1862,80 @@ function StatsTab({
             )}
           </div>
         ))}
+      </div>
+
+      {/* Guest breakdown by category */}
+      <div className="mb-6">
+        <button
+          onClick={() => setShowGuestBreakdown((v) => !v)}
+          className="flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-gray-900 mb-3"
+        >
+          {showGuestBreakdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          Desglose de Invitados por Grupo
+        </button>
+        {showGuestBreakdown && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Adults */}
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                <span className="text-sm font-semibold text-gray-700">Adultos</span>
+                <span className="text-xs font-medium bg-gray-200 text-gray-600 rounded-full px-2 py-0.5">
+                  {stats.totalAdults}
+                </span>
+              </div>
+              <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+                {groups.map((group) => {
+                  const adults = group.guests.filter((g) => g.category === "ADULT");
+                  if (adults.length === 0) return null;
+                  return (
+                    <div key={group.id} className="px-4 py-2">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                        {group.name}
+                      </p>
+                      {adults.map((g) => (
+                        <p key={g.id} className="text-sm text-gray-700 pl-2 py-0.5">
+                          {g.name}
+                        </p>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            {/* Children */}
+            <div className="bg-white border border-blue-200 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 bg-blue-50 border-b border-blue-200 flex items-center justify-between">
+                <span className="text-sm font-semibold text-blue-700">Menores</span>
+                <span className="text-xs font-medium bg-blue-200 text-blue-700 rounded-full px-2 py-0.5">
+                  {stats.totalChildren}
+                </span>
+              </div>
+              <div className="divide-y divide-blue-50 max-h-80 overflow-y-auto">
+                {groups.map((group) => {
+                  const children = group.guests.filter((g) => g.category === "CHILD");
+                  if (children.length === 0) return null;
+                  return (
+                    <div key={group.id} className="px-4 py-2">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                        {group.name}
+                      </p>
+                      {children.map((g) => (
+                        <p key={g.id} className="text-sm text-blue-700 pl-2 py-0.5">
+                          {g.name}
+                        </p>
+                      ))}
+                    </div>
+                  );
+                })}
+                {stats.totalChildren === 0 && (
+                  <div className="px-4 py-4 text-center text-sm text-gray-400">
+                    No hay menores registrados
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Menu breakdown */}
