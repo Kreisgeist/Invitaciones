@@ -1543,9 +1543,22 @@ function RoundsTab({
                     {/* Response details */}
                     {(round.links ?? []).some((l) => l.response) && (
                       <div className="mt-6">
-                        <h4 className="text-sm font-medium text-gray-700 mb-3">
-                          Detalle de respuestas
-                        </h4>
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-medium text-gray-700">
+                            Detalle de respuestas
+                          </h4>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const url = `/api/events/${eventId}/export-round?roundId=${round.id}`;
+                              window.open(url, "_blank");
+                            }}
+                            className="text-xs bg-primary text-white px-2.5 py-1.5 rounded-lg hover:bg-primary-dark flex items-center gap-1"
+                          >
+                            <FileDown className="w-3.5 h-3.5" />
+                            Exportar a Excel
+                          </button>
+                        </div>
                         <div className="space-y-3">
                           {(round.links ?? [])
                             .filter((l) => l.response)
@@ -1647,23 +1660,10 @@ function RoundsTab({
                 {/* Round Report (only for CLOSED rounds with responses) */}
                 {round.status === "CLOSED" && (round.links ?? []).some(l => l.response) && (
                   <div className="border-t border-gray-100 p-4 bg-blue-50/50">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                        <BarChart3 className="w-4 h-4 text-blue-600" />
-                        Reporte de Ronda
-                      </h4>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const url = `/api/events/${eventId}/export-round?roundId=${round.id}`;
-                          window.open(url, "_blank");
-                        }}
-                        className="text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-dark flex items-center gap-1.5"
-                      >
-                        <FileDown className="w-3.5 h-3.5" />
-                        Exportar a Excel
-                      </button>
-                    </div>
+                    <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-blue-600" />
+                      Reporte de Ronda
+                    </h4>
                     {(() => {
                       const stats = calculateRoundStats(round);
                       return (
