@@ -16,6 +16,7 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  FileDown,
   StickyNote,
   UserPlus,
   Clock,
@@ -1646,10 +1647,23 @@ function RoundsTab({
                 {/* Round Report (only for CLOSED rounds with responses) */}
                 {round.status === "CLOSED" && (round.links ?? []).some(l => l.response) && (
                   <div className="border-t border-gray-100 p-4 bg-blue-50/50">
-                    <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4 text-blue-600" />
-                      Reporte de Ronda
-                    </h4>
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4 text-blue-600" />
+                        Reporte de Ronda
+                      </h4>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const url = `/api/events/${eventId}/export-round?roundId=${round.id}`;
+                          window.open(url, "_blank");
+                        }}
+                        className="text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary-dark flex items-center gap-1.5"
+                      >
+                        <FileDown className="w-3.5 h-3.5" />
+                        Exportar a Excel
+                      </button>
+                    </div>
                     {(() => {
                       const stats = calculateRoundStats(round);
                       return (
