@@ -7,6 +7,8 @@ Sistema web para gestionar invitaciones y confirmaciones de asistencia a eventos
 - **Formularios personalizados** por grupo/familia con diseño mobile-first
 - **Invitaciones estáticas** con lugares asignados y confirmación del grupo en un solo botón
 - **Enlace informativo del evento** sin confirmación, activable o desactivable manualmente
+- **Horarios de recepción y ceremonia religiosa** con ubicaciones y mapas independientes
+- **Diseño por secciones ordenables** con bloques personalizados de texto enriquecido
 - **Enlaces únicos** de un solo uso por grupo, configurables por rondas
 - **Dashboard administrativo** con resumen en tiempo real
 - **Confirmación de menú** (adulto/infantil) para menores de edad

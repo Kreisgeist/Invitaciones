@@ -38,6 +38,11 @@ import { formatDate, formatTime } from "@/lib/utils";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmModal";
 import RichTextEditor, { ColorPickerField } from "@/components/RichTextEditor";
+import InvitationSectionEditor from "@/components/InvitationSectionEditor";
+import {
+  normalizeInvitationSections,
+  type InvitationSection,
+} from "@/lib/invitationSections";
 
 interface Guest {
   id: string;
@@ -102,11 +107,15 @@ interface EventData {
   time: string;
   location: string;
   mapUrl: string | null;
+  ceremonyTime: string | null;
+  ceremonyLocation: string | null;
+  ceremonyMapUrl: string | null;
   dressCode: string | null;
   maxGuests: number;
   primaryColor: string | null;
   secondaryColor: string | null;
   bgImageUrl: string | null;
+  invitationSections: InvitationSection[] | null;
   staticInvitation: {
     id: string;
     token: string;
@@ -155,6 +164,9 @@ export default function EventDetailPage() {
   const [editMode, setEditMode] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editDescription, setEditDescription] = useState("");
+  const [editInvitationSections, setEditInvitationSections] = useState<
+    InvitationSection[]
+  >([]);
 
   const loadEvent = useCallback(async () => {
     try {
@@ -214,11 +226,15 @@ export default function EventDetailPage() {
         time: formData.get("time") as string,
         location: formData.get("location") as string,
         mapUrl: (formData.get("mapUrl") as string) || undefined,
+        ceremonyTime: formData.get("ceremonyTime") as string,
+        ceremonyLocation: formData.get("ceremonyLocation") as string,
+        ceremonyMapUrl: formData.get("ceremonyMapUrl") as string,
         dressCode: (formData.get("dressCode") as string) || undefined,
         maxGuests: parseInt(formData.get("maxGuests") as string) || 200,
         primaryColor: (formData.get("primaryColor") as string) || undefined,
         secondaryColor: (formData.get("secondaryColor") as string) || undefined,
         bgImageUrl: (formData.get("bgImageUrl") as string) || undefined,
+        invitationSections: editInvitationSections,
       };
       const res = await fetch(`/api/events/${eventId}`, {
         method: "PUT",
@@ -330,6 +346,50 @@ export default function EventDetailPage() {
                   <input name="maxGuests" type="number" defaultValue={event.maxGuests} className="input-field" min={1} />
                 </div>
               </div>
+              <div className="border-t border-gray-200 pt-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                  Ceremonia religiosa
+                </h3>
+                <p className="text-xs text-gray-500 mb-3">
+                  Opcional. Comparte la fecha principal del evento.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Hora
+                    </label>
+                    <input
+                      name="ceremonyTime"
+                      type="time"
+                      defaultValue={event.ceremonyTime ?? ""}
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Ubicación
+                    </label>
+                    <input
+                      name="ceremonyLocation"
+                      defaultValue={event.ceremonyLocation ?? ""}
+                      className="input-field"
+                      placeholder="Ej: Parroquia Santa María"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Ubicación en Google Maps
+                    </label>
+                    <input
+                      name="ceremonyMapUrl"
+                      type="url"
+                      defaultValue={event.ceremonyMapUrl ?? ""}
+                      className="input-field"
+                      placeholder="https://maps.google.com/..."
+                    />
+                  </div>
+                </div>
+              </div>
               {/* Theme customization */}
               <div className="border-t border-gray-200 pt-4">
                 <h3 className="text-sm font-semibold text-gray-900 mb-1">Personalización del formulario</h3>
@@ -352,6 +412,12 @@ export default function EventDetailPage() {
                     <input name="bgImageUrl" type="url" defaultValue={event.bgImageUrl ?? ""} className="input-field" placeholder="https://drive.google.com/file/d/.../view?usp=drive_link" />
                     <p className="text-xs text-gray-500 mt-1">Pega el enlace para compartir de Google Drive. La imagen debe ser pública ("Cualquier persona con el enlace").</p>
                   </div>
+                </div>
+                <div className="border-t border-gray-200 pt-4">
+                  <InvitationSectionEditor
+                    sections={editInvitationSections}
+                    onChange={setEditInvitationSections}
+                  />
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-2">
@@ -390,7 +456,13 @@ export default function EventDetailPage() {
               </div>
               <div className="flex items-center gap-2 self-start">
                 <button
-                  onClick={() => { setEditDescription(event.description ?? ""); setEditMode(true); }}
+                  onClick={() => {
+                    setEditDescription(event.description ?? "");
+                    setEditInvitationSections(
+                      normalizeInvitationSections(event.invitationSections)
+                    );
+                    setEditMode(true);
+                  }}
                   className="btn-secondary text-sm flex items-center gap-1"
                 >
                   <Pencil className="w-4 h-4" />

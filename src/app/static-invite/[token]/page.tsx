@@ -1,17 +1,17 @@
 "use client";
 
 import { use, useEffect, useMemo, useState } from "react";
+import { AlertCircle } from "lucide-react";
 import {
-  AlertCircle,
-  CalendarDays,
-  Clock,
-  ExternalLink,
-  MapPin,
-  Shirt,
-} from "lucide-react";
+  InvitationCustomSection,
+  InvitationIntroduction,
+  InvitationSchedule,
+} from "@/components/InvitationContentSections";
 import { getInvitationBackgroundStyle } from "@/lib/invitationTheme";
-import { renderInviteHtml } from "@/lib/renderInviteHtml";
-import { formatDate, formatTime } from "@/lib/utils";
+import {
+  normalizeInvitationSections,
+  type InvitationSection,
+} from "@/lib/invitationSections";
 
 interface StaticInvitationData {
   event: {
@@ -21,10 +21,14 @@ interface StaticInvitationData {
     time: string;
     location: string;
     mapUrl: string | null;
+    ceremonyTime: string | null;
+    ceremonyLocation: string | null;
+    ceremonyMapUrl: string | null;
     dressCode: string | null;
     primaryColor: string | null;
     secondaryColor: string | null;
     bgImageUrl: string | null;
+    invitationSections: InvitationSection[] | null;
   };
 }
 
@@ -84,60 +88,46 @@ export default function StaticInvitationPage({
 
   return (
     <div className="invitation-bg min-h-screen py-6 px-4" style={bgStyle}>
-      <div className="max-w-lg mx-auto">
-        <div className="invitation-card p-8 text-center animate-fade-in-up">
-          {data.event.description ? (
-            <div
-              className="prose-invite mb-6"
-              dangerouslySetInnerHTML={{
-                __html: renderInviteHtml(data.event.description),
-              }}
-            />
-          ) : (
-            <h1
-              className="text-3xl font-bold text-text-main mb-6"
-              style={{ fontFamily: "Playfair Display, serif" }}
-            >
-              {data.event.name}
-            </h1>
-          )}
-
-          <div className="divider-ornament">
-            <span className="text-accent text-sm">✦</span>
-          </div>
-
-          <div className="space-y-3 text-text-muted">
-            <div className="flex items-center justify-center gap-2">
-              <CalendarDays className="w-5 h-5 text-accent shrink-0" />
-              <span>{formatDate(data.event.date, true)}</span>
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <Clock className="w-5 h-5 text-accent shrink-0" />
-              <span>{formatTime(data.event.time)}</span>
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <MapPin className="w-5 h-5 text-accent shrink-0" />
-              <span>{data.event.location}</span>
-            </div>
-            {data.event.dressCode && (
-              <div className="flex items-center justify-center gap-2">
-                <Shirt className="w-5 h-5 text-accent shrink-0" />
-                <span>{data.event.dressCode}</span>
-              </div>
-            )}
-            {data.event.mapUrl && (
-              <a
-                href={data.event.mapUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-text-muted hover:text-text-main bg-bg-warm border border-border/50 rounded-full px-4 py-2 text-sm font-medium transition-colors"
-              >
-                <ExternalLink className="w-4 h-4 shrink-0" />
-                Ver en Google Maps
-              </a>
-            )}
-          </div>
-        </div>
+      <div className="max-w-lg mx-auto space-y-6">
+        {normalizeInvitationSections(data.event.invitationSections).map(
+          (section) => {
+            if (section.type === "INTRODUCTION") {
+              return (
+                <InvitationIntroduction
+                  key={section.id}
+                  event={data.event}
+                />
+              );
+            }
+            if (section.type === "CEREMONY") {
+              return (
+                <InvitationSchedule
+                  key={section.id}
+                  event={data.event}
+                  type="CEREMONY"
+                />
+              );
+            }
+            if (section.type === "RECEPTION") {
+              return (
+                <InvitationSchedule
+                  key={section.id}
+                  event={data.event}
+                  type="RECEPTION"
+                />
+              );
+            }
+            if (section.type === "CUSTOM") {
+              return (
+                <InvitationCustomSection
+                  key={section.id}
+                  section={section}
+                />
+              );
+            }
+            return null;
+          }
+        )}
       </div>
     </div>
   );

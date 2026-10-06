@@ -36,10 +36,14 @@ export async function GET(
       time: invitation.event.time,
       location: invitation.event.location,
       mapUrl: invitation.event.mapUrl,
+      ceremonyTime: invitation.event.ceremonyTime,
+      ceremonyLocation: invitation.event.ceremonyLocation,
+      ceremonyMapUrl: invitation.event.ceremonyMapUrl,
       dressCode: invitation.event.dressCode,
       primaryColor: invitation.event.primaryColor,
       secondaryColor: invitation.event.secondaryColor,
       bgImageUrl: invitation.event.bgImageUrl,
+      invitationSections: invitation.event.invitationSections,
     },
   });
 }

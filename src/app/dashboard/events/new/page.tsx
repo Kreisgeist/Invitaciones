@@ -5,12 +5,20 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import RichTextEditor, { ColorPickerField } from "@/components/RichTextEditor";
+import InvitationSectionEditor from "@/components/InvitationSectionEditor";
+import {
+  DEFAULT_INVITATION_SECTIONS,
+  type InvitationSection,
+} from "@/lib/invitationSections";
 
 export default function NewEventPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [description, setDescription] = useState("");
+  const [invitationSections, setInvitationSections] = useState<
+    InvitationSection[]
+  >(DEFAULT_INVITATION_SECTIONS);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -25,11 +33,17 @@ export default function NewEventPage() {
       time: formData.get("time") as string,
       location: formData.get("location") as string,
       mapUrl: (formData.get("mapUrl") as string) || undefined,
+      ceremonyTime: (formData.get("ceremonyTime") as string) || undefined,
+      ceremonyLocation:
+        (formData.get("ceremonyLocation") as string) || undefined,
+      ceremonyMapUrl:
+        (formData.get("ceremonyMapUrl") as string) || undefined,
       dressCode: formData.get("dressCode") as string,
       maxGuests: parseInt(formData.get("maxGuests") as string) || 200,
       primaryColor: (formData.get("primaryColor") as string) || undefined,
       secondaryColor: (formData.get("secondaryColor") as string) || undefined,
       bgImageUrl: (formData.get("bgImageUrl") as string) || undefined,
+      invitationSections,
     };
 
     try {
@@ -97,7 +111,14 @@ export default function NewEventPage() {
           <p className="text-xs text-gray-500 mt-1">Usa las herramientas de formato para personalizar el texto. Se mostrará en la invitación tal como lo definas aquí.</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="border-t border-gray-200 pt-5">
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">
+            Recepción
+          </h3>
+          <p className="text-xs text-gray-500 mb-4">
+            Este es el horario principal del evento.
+          </p>
+          <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Fecha *
@@ -115,9 +136,9 @@ export default function NewEventPage() {
               required
             />
           </div>
-        </div>
+          </div>
 
-        <div>
+          <div className="mt-4">
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             Ubicación *
           </label>
@@ -127,9 +148,9 @@ export default function NewEventPage() {
             placeholder="Ej: Salón de Eventos Las Palmas"
             required
           />
-        </div>
+          </div>
 
-        <div>
+          <div className="mt-4">
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             Ubicación en Google Maps
           </label>
@@ -140,6 +161,49 @@ export default function NewEventPage() {
             placeholder="https://maps.google.com/..."
           />
           <p className="text-xs text-gray-500 mt-1">Opcional. Pega el enlace de Google Maps para que los invitados lleguen fácilmente.</p>
+          </div>
+        </div>
+
+        <div className="border-t border-gray-200 pt-5">
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">
+            Ceremonia religiosa
+          </h3>
+          <p className="text-xs text-gray-500 mb-4">
+            Opcional. Usa la misma fecha del evento.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Hora
+              </label>
+              <input
+                name="ceremonyTime"
+                type="time"
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Ubicación
+              </label>
+              <input
+                name="ceremonyLocation"
+                className="input-field"
+                placeholder="Ej: Parroquia Santa María"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Ubicación en Google Maps
+              </label>
+              <input
+                name="ceremonyMapUrl"
+                type="url"
+                className="input-field"
+                placeholder="https://maps.google.com/..."
+              />
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -185,6 +249,7 @@ export default function NewEventPage() {
               description="Decoraciones y detalles"
             />
           </div>
+
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Imagen de fondo (Google Drive)
@@ -195,8 +260,18 @@ export default function NewEventPage() {
               className="input-field"
               placeholder="https://drive.google.com/file/d/.../view?usp=drive_link"
             />
-            <p className="text-xs text-gray-500 mt-1">Pega el enlace para compartir de Google Drive. La imagen debe ser pública ("Cualquier persona con el enlace").</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Pega el enlace para compartir de Google Drive. La imagen debe ser
+              pública (&quot;Cualquier persona con el enlace&quot;).
+            </p>
           </div>
+        </div>
+
+        <div className="border-t border-gray-200 pt-5">
+          <InvitationSectionEditor
+            sections={invitationSections}
+            onChange={setInvitationSections}
+          />
         </div>
 
         {error && (

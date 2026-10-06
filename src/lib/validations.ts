@@ -1,5 +1,19 @@
 import { z } from "zod";
 
+const invitationSectionSchema = z.object({
+  id: z.string().min(1),
+  type: z.enum([
+    "INTRODUCTION",
+    "CEREMONY",
+    "RECEPTION",
+    "GUESTS",
+    "ACTIONS",
+    "CUSTOM",
+  ]),
+  title: z.string().optional(),
+  content: z.string().optional(),
+});
+
 // ── Event ──
 export const eventSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
@@ -8,11 +22,15 @@ export const eventSchema = z.object({
   time: z.string().min(1, "La hora es requerida"),
   location: z.string().min(1, "La ubicación es requerida"),
   mapUrl: z.string().url("URL inválida").optional().or(z.literal("")),
+  ceremonyTime: z.string().optional(),
+  ceremonyLocation: z.string().optional(),
+  ceremonyMapUrl: z.string().url("URL inválida").optional().or(z.literal("")),
   dressCode: z.string().optional(),
   maxGuests: z.coerce.number().int().positive().default(200),
   primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Color inválido").optional().or(z.literal("")),
   secondaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Color inválido").optional().or(z.literal("")),
   bgImageUrl: z.string().url("URL inválida").optional().or(z.literal("")),
+  invitationSections: z.array(invitationSectionSchema).optional(),
 });
 
 export type EventInput = z.infer<typeof eventSchema>;
