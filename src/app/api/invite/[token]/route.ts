@@ -70,6 +70,7 @@ export async function GET(
     })),
     currentGroupSize: link.group.guests.length,
     maxGroupSize: 10,
+    invitationMode: link.round.invitationMode,
     allowAdditionalTickets: link.round.allowAdditionalTickets,
     status: {
       isExpired,

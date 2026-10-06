@@ -42,6 +42,7 @@ export const roundSchema = z.object({
   eventId: z.string().min(1),
   opensAt: z.string().min(1, "La fecha de apertura es requerida"),
   closesAt: z.string().min(1, "La fecha de cierre es requerida"),
+  invitationMode: z.enum(["RSVP", "STATIC"]).default("RSVP"),
   allowAdditionalTickets: z.boolean().default(false),
   status: z.enum(["DRAFT", "OPEN", "CLOSED"]).default("DRAFT").optional(),
 });
@@ -68,6 +69,10 @@ export const invitationResponseSchema = z.object({
   guestResponses: z.array(guestResponseSchema),
   wantsAdditionalTickets: z.boolean().default(false),
   additionalGuests: z.array(additionalGuestSchema).default([]),
+});
+
+export const staticInvitationResponseSchema = z.object({
+  status: z.literal("ACCEPTED"),
 });
 
 export type InvitationResponseInput = z.infer<typeof invitationResponseSchema>;

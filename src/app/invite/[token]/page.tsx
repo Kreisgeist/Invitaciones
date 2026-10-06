@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useState, useMemo, use } from "react";
-import { formatDate, formatTime, getDirectImageUrl } from "@/lib/utils";
+import { formatDate, formatTime } from "@/lib/utils";
 import { renderInviteHtml } from "@/lib/renderInviteHtml";
+import {
+  getInvitationBackgroundStyle,
+  getInvitationThemeStyle,
+} from "@/lib/invitationTheme";
 import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmModal";
 import {
@@ -19,6 +23,7 @@ import {
   HeartCrack,
   Pencil,
   ExternalLink,
+  CheckCircle2,
 } from "lucide-react";
 
 interface GuestInfo {
@@ -64,6 +69,7 @@ interface InvitationData {
   guests: GuestInfo[];
   currentGroupSize: number;
   maxGroupSize: number;
+  invitationMode: "RSVP" | "STATIC";
   allowAdditionalTickets: boolean;
   status: {
     isExpired: boolean;
@@ -122,68 +128,14 @@ export default function InvitationPage({
   );
   const [isEditing, setIsEditing] = useState(false);
 
-  // ── Theme computation from event colors ──
-  const themeStyle = useMemo(() => {
-    if (!data) return {} as React.CSSProperties;
-    const primary = data.event.primaryColor || "#8B5E3C";
-    const accent = data.event.secondaryColor || "#D4AF37";
-
-    // Hex → RGB helper
-    const hexToRgb = (hex: string) => {
-      const h = hex.replace("#", "");
-      return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)] as [number, number, number];
-    };
-    const rgbToHex = (r: number, g: number, b: number) =>
-      "#" + [r, g, b].map((c) => Math.max(0, Math.min(255, Math.round(c))).toString(16).padStart(2, "0")).join("");
-    const mix = (hex: string, target: [number, number, number], pct: number) => {
-      const [r, g, b] = hexToRgb(hex);
-      return rgbToHex(r + (target[0] - r) * pct, g + (target[1] - g) * pct, b + (target[2] - b) * pct);
-    };
-
-    const primaryLight = mix(primary, [255, 255, 255], 0.45);
-    const primaryDark = mix(primary, [0, 0, 0], 0.35);
-    const accentLight = mix(accent, [255, 255, 255], 0.55);
-    const accentBorder = mix(accent, [255, 255, 255], 0.4);
-    const bgWarm = mix(primary, [255, 255, 255], 0.93);
-    const bgCream = mix(primary, [255, 255, 255], 0.97);
-
-    // Text colors: fixed dark tones for legibility, independent of theme colors
-    const textMain = "#3D2B1F";
-    const textMuted = "#8B7355";
-
-    const vars: Record<string, string> = {
-      "--color-primary": primary,
-      "--color-primary-light": primaryLight,
-      "--color-primary-dark": primaryDark,
-      "--color-accent": accent,
-      "--color-accent-light": accentLight,
-      "--color-bg-warm": bgWarm,
-      "--color-bg-cream": bgCream,
-      "--color-text-main": textMain,
-      "--color-text-muted": textMuted,
-      "--color-border": accentBorder,
-    };
-
-    if (data.event.bgImageUrl) {
-      const directUrl = getDirectImageUrl(data.event.bgImageUrl);
-      vars["--theme-bg-image"] = `url(${directUrl})`;
-    }
-
-    return vars as unknown as React.CSSProperties;
-  }, [data]);
-
-  // Background style for invitation pages (applies bg image if set)
-  const bgStyle = useMemo((): React.CSSProperties => {
-    if (!data?.event.bgImageUrl) return themeStyle;
-    const directUrl = getDirectImageUrl(data.event.bgImageUrl);
-    return {
-      ...themeStyle,
-      backgroundImage: `linear-gradient(rgba(255,255,255,0.65), rgba(255,255,255,0.65)), url(${directUrl})`,
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-      backgroundAttachment: "fixed",
-    };
-  }, [themeStyle, data]);
+  const themeStyle = useMemo(
+    () => (data ? getInvitationThemeStyle(data.event) : {}),
+    [data]
+  );
+  const bgStyle = useMemo(
+    () => (data ? getInvitationBackgroundStyle(data.event) : themeStyle),
+    [data, themeStyle]
+  );
 
   useEffect(() => {
     fetch(`/api/invite/${token}`)
@@ -278,6 +230,29 @@ export default function InvitationPage({
       } else {
         const err = await res.json();
         toast.error(err.error || "Error al enviar la respuesta");
+      }
+    } catch {
+      toast.error("Error de conexión. Intenta de nuevo.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleStaticConfirmation = async () => {
+    setSubmitting(true);
+
+    try {
+      const res = await fetch(`/api/invite/${token}/respond`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "ACCEPTED" }),
+      });
+
+      if (res.ok) {
+        setSubmitted("ACCEPTED");
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Error al confirmar la invitación");
       }
     } catch {
       toast.error("Error de conexión. Intenta de nuevo.");
@@ -390,6 +365,18 @@ export default function InvitationPage({
           </p>
         </div>
       </div>
+    );
+  }
+
+  if (data.invitationMode === "STATIC") {
+    return (
+      <StaticInvitation
+        data={data}
+        bgStyle={bgStyle}
+        confirmed={data.status.hasResponse || submitted === "ACCEPTED"}
+        submitting={submitting}
+        onConfirm={handleStaticConfirmation}
+      />
     );
   }
 
@@ -832,6 +819,160 @@ export default function InvitationPage({
             No podré asistir
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function StaticInvitation({
+  data,
+  bgStyle,
+  confirmed,
+  submitting,
+  onConfirm,
+}: {
+  data: InvitationData;
+  bgStyle: React.CSSProperties;
+  confirmed: boolean;
+  submitting: boolean;
+  onConfirm: () => void;
+}) {
+  const adults = data.guests.filter((guest) => guest.category === "ADULT");
+  const children = data.guests.filter((guest) => guest.category === "CHILD");
+
+  return (
+    <div className="invitation-bg min-h-screen py-6 px-4" style={bgStyle}>
+      <div className="max-w-lg mx-auto space-y-6">
+        <div className="invitation-card p-8 text-center animate-fade-in-up">
+          {data.event.description && (
+            <div
+              className="prose-invite mb-4"
+              dangerouslySetInnerHTML={{
+                __html: renderInviteHtml(data.event.description),
+              }}
+            />
+          )}
+
+          <div className="space-y-2 text-sm text-text-muted">
+            <div className="flex items-center justify-center gap-2">
+              <CalendarDays className="w-4 h-4 text-accent shrink-0" />
+              <span>{formatDate(data.event.date, true)}</span>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <Clock className="w-4 h-4 text-accent shrink-0" />
+              <span>{formatTime(data.event.time)}</span>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <MapPin className="w-4 h-4 text-accent shrink-0" />
+              <span>{data.event.location}</span>
+            </div>
+            {data.event.mapUrl && (
+              <a
+                href={data.event.mapUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-text-muted hover:text-text-main bg-bg-warm border border-border/50 rounded-full px-3 py-1 text-sm font-medium transition-colors"
+              >
+                <ExternalLink className="w-4 h-4 shrink-0" />
+                Ver en Google Maps
+              </a>
+            )}
+            {data.event.dressCode && (
+              <div className="flex items-center justify-center gap-2">
+                <Shirt className="w-4 h-4 text-accent shrink-0" />
+                <span>{data.event.dressCode}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="invitation-card p-6 animate-fade-in-up animate-delay-100">
+          <div className="flex items-center gap-3 mb-2">
+            <Users className="w-5 h-5 text-primary" />
+            <h2
+              className="text-xl font-semibold text-text-main"
+              style={{ fontFamily: "Playfair Display, serif" }}
+            >
+              {data.displayName}
+            </h2>
+          </div>
+          <p className="text-text-muted text-sm">
+            Hemos reservado {data.currentGroupSize} lugar(es) para tu grupo.
+            Esta invitación incluye a las siguientes personas:
+          </p>
+        </div>
+
+        <div className="invitation-card p-6 animate-fade-in-up animate-delay-200">
+          {adults.length > 0 && (
+            <GuestList title="Adultos" guests={adults} />
+          )}
+          {children.length > 0 && (
+            <div className={adults.length > 0 ? "mt-5 pt-5 border-t border-border" : ""}>
+              <GuestList title="Menores de edad" guests={children} />
+            </div>
+          )}
+        </div>
+
+        <div className="pb-8 animate-fade-in-up animate-delay-300">
+          {confirmed ? (
+            <div className="invitation-card p-6 text-center">
+              <CheckCircle2 className="w-12 h-12 text-accent mx-auto mb-3" />
+              <h3
+                className="text-xl font-semibold text-text-main mb-2"
+                style={{ fontFamily: "Playfair Display, serif" }}
+              >
+                Invitación confirmada
+              </h3>
+              <p className="text-sm text-text-muted">
+                Registramos la asistencia de las {data.currentGroupSize} personas
+                incluidas en tu grupo. ¡Te esperamos!
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm text-text-muted text-center mb-3">
+                Al confirmar, registraremos la asistencia de todo el grupo.
+              </p>
+              <button
+                onClick={onConfirm}
+                disabled={submitting}
+                className="btn-primary w-full text-center text-lg py-4"
+              >
+                {submitting ? "Confirmando..." : "✨ Confirmar invitación"}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GuestList({
+  title,
+  guests,
+}: {
+  title: string;
+  guests: GuestInfo[];
+}) {
+  return (
+    <div>
+      <h3 className="text-lg font-semibold text-text-main mb-3 flex items-center gap-2">
+        <Users className="w-5 h-5 text-primary" />
+        {title}
+      </h3>
+      <div className="space-y-2">
+        {guests.map((guest) => (
+          <div
+            key={guest.id}
+            className="flex items-center justify-between py-2 px-3 rounded-lg bg-bg-warm text-sm"
+          >
+            <span className="font-medium text-text-main">{guest.name}</span>
+            <span className="text-text-muted">
+              {guest.category === "CHILD" ? "Menor" : "Adulto"}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );

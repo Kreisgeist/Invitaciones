@@ -31,6 +31,8 @@ import {
   Ticket,
   UserCheck,
   Ban,
+  Share2,
+  Power,
 } from "lucide-react";
 import { formatDate, formatTime } from "@/lib/utils";
 import { useToast } from "@/components/Toast";
@@ -86,6 +88,7 @@ interface Round {
   opensAt: string;
   closesAt: string;
   status: "DRAFT" | "OPEN" | "CLOSED";
+  invitationMode: "RSVP" | "STATIC";
   allowAdditionalTickets: boolean;
   links: InvitationLink[];
   _count: { links: number };
@@ -104,6 +107,13 @@ interface EventData {
   primaryColor: string | null;
   secondaryColor: string | null;
   bgImageUrl: string | null;
+  staticInvitation: {
+    id: string;
+    token: string;
+    enabled: boolean;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
   groups: Group[];
   rounds: Round[];
 }
@@ -128,7 +138,7 @@ interface Stats {
   dietaryNotes: { guestName: string; groupName: string; notes: string }[];
 }
 
-type Tab = "groups" | "rounds" | "stats";
+type Tab = "groups" | "rounds" | "static" | "stats";
 
 export default function EventDetailPage() {
   const params = useParams();
@@ -180,6 +190,15 @@ export default function EventDetailPage() {
     const baseUrl =
       process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
     const url = `${baseUrl}/invite/${token}`;
+    await navigator.clipboard.writeText(url);
+    setCopiedToken(token);
+    setTimeout(() => setCopiedToken(null), 2000);
+  };
+
+  const copyStaticLink = async (token: string) => {
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    const url = `${baseUrl}/static-invite/${token}`;
     await navigator.clipboard.writeText(url);
     setCopiedToken(token);
     setTimeout(() => setCopiedToken(null), 2000);
@@ -244,6 +263,7 @@ export default function EventDetailPage() {
   const tabs: { key: Tab; label: string; icon: typeof Users }[] = [
     { key: "groups", label: "Grupos e Invitados", icon: Users },
     { key: "rounds", label: "Rondas de Invitación", icon: Send },
+    { key: "static", label: "Enlace Informativo", icon: Share2 },
     { key: "stats", label: "Resumen", icon: BarChart3 },
   ];
 
@@ -446,7 +466,182 @@ export default function EventDetailPage() {
           onCopyLink={copyLink}
         />
       )}
+      {activeTab === "static" && (
+        <StaticInvitationTab
+          eventId={eventId}
+          invitation={event.staticInvitation}
+          copiedToken={copiedToken}
+          onCopyLink={copyStaticLink}
+          onRefresh={loadEvent}
+        />
+      )}
       {activeTab === "stats" && <StatsTab stats={stats} groups={event.groups} onRefresh={loadStats} />}
+    </div>
+  );
+}
+
+function StaticInvitationTab({
+  eventId,
+  invitation,
+  copiedToken,
+  onCopyLink,
+  onRefresh,
+}: {
+  eventId: string;
+  invitation: EventData["staticInvitation"];
+  copiedToken: string | null;
+  onCopyLink: (token: string) => void;
+  onRefresh: () => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const toast = useToast();
+
+  const generateInvitation = async () => {
+    setSaving(true);
+    try {
+      const response = await fetch(
+        `/api/events/${eventId}/static-invitation`,
+        { method: "POST" }
+      );
+      if (!response.ok) {
+        const body = await response.json();
+        toast.error(body.error || "Error al generar el enlace");
+        return;
+      }
+      toast.success("Enlace informativo generado");
+      onRefresh();
+    } catch {
+      toast.error("Error de conexión");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const setEnabled = async (enabled: boolean) => {
+    setSaving(true);
+    try {
+      const response = await fetch(
+        `/api/events/${eventId}/static-invitation`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled }),
+        }
+      );
+      if (!response.ok) {
+        const body = await response.json();
+        toast.error(body.error || "Error al actualizar el enlace");
+        return;
+      }
+      toast.success(enabled ? "Enlace activado" : "Enlace desactivado");
+      onRefresh();
+    } catch {
+      toast.error("Error de conexión");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!invitation) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
+        <Share2 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+        <h2 className="text-lg font-semibold text-gray-900 mb-2">
+          Enlace informativo del evento
+        </h2>
+        <p className="text-sm text-gray-500 max-w-xl mx-auto mb-5">
+          Genera un enlace público con la descripción, fecha, hora, ubicación,
+          mapa, vestimenta y personalización visual del evento. No solicita ni
+          registra ninguna confirmación.
+        </p>
+        <button
+          onClick={generateInvitation}
+          disabled={saving}
+          className="btn-primary text-sm inline-flex items-center gap-2"
+        >
+          <Share2 className="w-4 h-4" />
+          {saving ? "Generando..." : "Generar enlace estático"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-5">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Enlace informativo del evento
+            </h2>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                invitation.enabled
+                  ? "bg-green-100 text-green-700"
+                  : "bg-gray-100 text-gray-600"
+              }`}
+            >
+              {invitation.enabled ? "Activo" : "Inactivo"}
+            </span>
+          </div>
+          <p className="text-sm text-gray-500 max-w-2xl">
+            Este enlace muestra únicamente los detalles personalizados del
+            evento. No contiene campos, botones de confirmación ni modifica las
+            estadísticas.
+          </p>
+        </div>
+        <button
+          onClick={() => setEnabled(!invitation.enabled)}
+          disabled={saving}
+          className={
+            invitation.enabled
+              ? "btn-secondary text-sm inline-flex items-center gap-2"
+              : "btn-primary text-sm inline-flex items-center gap-2"
+          }
+        >
+          <Power className="w-4 h-4" />
+          {saving
+            ? "Actualizando..."
+            : invitation.enabled
+              ? "Desactivar enlace"
+              : "Activar enlace"}
+        </button>
+      </div>
+
+      <div className="mt-5 pt-5 border-t border-gray-100 flex flex-wrap items-center gap-3">
+        <button
+          onClick={() => onCopyLink(invitation.token)}
+          disabled={!invitation.enabled}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-700 hover:border-primary hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+        >
+          {copiedToken === invitation.token ? (
+            <Check className="w-4 h-4 text-green-500" />
+          ) : (
+            <Copy className="w-4 h-4" />
+          )}
+          {copiedToken === invitation.token
+            ? "Enlace copiado"
+            : "Copiar enlace"}
+        </button>
+        <a
+          href={`/static-invite/${invitation.token}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`text-sm border border-gray-200 rounded-lg px-3 py-2 inline-flex items-center gap-2 ${
+            invitation.enabled
+              ? "text-gray-700 hover:border-primary hover:text-primary"
+              : "text-gray-400 pointer-events-none"
+          }`}
+        >
+          <ExternalLink className="w-4 h-4" />
+          Vista previa
+        </a>
+        {!invitation.enabled && (
+          <span className="text-xs text-gray-400">
+            Activa el enlace para copiarlo o abrir la vista pública.
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -1107,6 +1302,7 @@ function RoundsTab({
   const [saving, setSaving] = useState(false);
   const [expandedRound, setExpandedRound] = useState<string | null>(null);
   const [expandedLinkGroup, setExpandedLinkGroup] = useState<string | null>(null);
+  const [newRoundMode, setNewRoundMode] = useState<"RSVP" | "STATIC">("RSVP");
 
   const groupsById = useMemo(() => {
     const map = new Map<string, Group>();
@@ -1187,13 +1383,15 @@ function RoundsTab({
     setSaving(true);
 
     const formData = new FormData(e.currentTarget);
-    const roundId = (Math.random() + 1).toString(36).substring(7);
     const data = {
       eventId,
       name: formData.get("name") as string,
       opensAt: formData.get("opensAt") as string,
       closesAt: formData.get("closesAt") as string,
-      allowAdditionalTickets: formData.get("allowAdditionalTickets") === "on",
+      invitationMode: newRoundMode,
+      allowAdditionalTickets:
+        newRoundMode === "RSVP" &&
+        formData.get("allowAdditionalTickets") === "on",
       status: "OPEN",
     };
 
@@ -1206,6 +1404,7 @@ function RoundsTab({
 
       if (res.ok) {
         setShowNewRound(false);
+        setNewRoundMode("RSVP");
         toast.success("Ronda creada y abierta automáticamente");
         onRefresh();
       } else {
@@ -1330,21 +1529,44 @@ function RoundsTab({
               />
             </div>
           </div>
-          <label className="flex items-center gap-3 cursor-pointer py-1">
-            <input
-              name="allowAdditionalTickets"
-              type="checkbox"
-              className="w-4 h-4 rounded border-gray-300 text-primary accent-primary"
-            />
-            <div>
-              <span className="text-sm font-medium text-gray-700">
-                Permitir solicitud de boletos adicionales
-              </span>
-              <p className="text-xs text-gray-400">
-                Los invitados podrán solicitar boletos extra al confirmar asistencia
-              </p>
-            </div>
-          </label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Tipo de invitación
+            </label>
+            <select
+              name="invitationMode"
+              value={newRoundMode}
+              onChange={(e) =>
+                setNewRoundMode(e.target.value as "RSVP" | "STATIC")
+              }
+              className="input-field"
+            >
+              <option value="RSVP">Confirmación individual</option>
+              <option value="STATIC">Confirmación estática del grupo</option>
+            </select>
+            <p className="text-xs text-gray-400 mt-1">
+              {newRoundMode === "STATIC"
+                ? "Muestra los lugares e invitados asignados y confirma todo el grupo con un solo botón."
+                : "Cada persona indica asistencia, menú y restricciones alimentarias."}
+            </p>
+          </div>
+          {newRoundMode === "RSVP" && (
+            <label className="flex items-center gap-3 cursor-pointer py-1">
+              <input
+                name="allowAdditionalTickets"
+                type="checkbox"
+                className="w-4 h-4 rounded border-gray-300 text-primary accent-primary"
+              />
+              <div>
+                <span className="text-sm font-medium text-gray-700">
+                  Permitir solicitud de boletos adicionales
+                </span>
+                <p className="text-xs text-gray-400">
+                  Los invitados podrán solicitar boletos extra al confirmar asistencia
+                </p>
+              </div>
+            </label>
+          )}
           <div className="flex justify-end gap-2">
             <button
               type="button"
@@ -1403,6 +1625,11 @@ function RoundsTab({
                         className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor}`}
                       >
                         {statusLabel}
+                      </span>
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-700">
+                        {round.invitationMode === "STATIC"
+                          ? "Estática"
+                          : "Individual"}
                       </span>
                     </div>
                     <p className="text-sm text-gray-500 mt-1">

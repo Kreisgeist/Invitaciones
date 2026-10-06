@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { invitationResponseSchema } from "@/lib/validations";
+import {
+  invitationResponseSchema,
+  staticInvitationResponseSchema,
+} from "@/lib/validations";
 
 export async function POST(
   request: NextRequest,
@@ -44,10 +47,49 @@ export async function POST(
       );
     }
 
+    const body = await request.json();
+
+    if (link.round.invitationMode === "STATIC") {
+      const parsed = staticInvitationResponseSchema.safeParse(body);
+
+      if (!parsed.success) {
+        return NextResponse.json(
+          { error: "Datos inválidos", details: parsed.error.flatten() },
+          { status: 400 }
+        );
+      }
+
+      if (link.response) {
+        return NextResponse.json({ success: true });
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.response.create({
+          data: {
+            invitationLinkId: link.id,
+            status: "ACCEPTED",
+            guestResponses: {
+              create: link.group.guests.map((guest) => ({
+                guestId: guest.id,
+                attending: true,
+                menuChoice: guest.category === "CHILD" ? "CHILD" : "ADULT",
+              })),
+            },
+          },
+        });
+
+        await tx.invitationLink.update({
+          where: { id: link.id },
+          data: { used: true, usedAt: new Date() },
+        });
+      });
+
+      return NextResponse.json({ success: true });
+    }
+
     // If already responded, this is an edit — allowed during open period
     const isEdit = !!link.response;
 
-    const body = await request.json();
     const parsed = invitationResponseSchema.safeParse(body);
 
     if (!parsed.success) {

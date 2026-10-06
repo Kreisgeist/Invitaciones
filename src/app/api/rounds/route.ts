@@ -91,7 +91,11 @@ export async function POST(request: NextRequest) {
         opensAt,
         closesAt,
         status: parsed.data.status || "DRAFT",
-        allowAdditionalTickets: parsed.data.allowAdditionalTickets ?? false,
+        invitationMode: parsed.data.invitationMode,
+        allowAdditionalTickets:
+          parsed.data.invitationMode === "RSVP"
+            ? parsed.data.allowAdditionalTickets ?? false
+            : false,
         links: {
           create: groupsWithGuests.map((group) => ({
             groupId: group.id,

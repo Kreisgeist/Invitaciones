@@ -5,6 +5,8 @@ Sistema web para gestionar invitaciones y confirmaciones de asistencia a eventos
 ## Características
 
 - **Formularios personalizados** por grupo/familia con diseño mobile-first
+- **Invitaciones estáticas** con lugares asignados y confirmación del grupo en un solo botón
+- **Enlace informativo del evento** sin confirmación, activable o desactivable manualmente
 - **Enlaces únicos** de un solo uso por grupo, configurables por rondas
 - **Dashboard administrativo** con resumen en tiempo real
 - **Confirmación de menú** (adulto/infantil) para menores de edad
@@ -123,7 +125,7 @@ Ejecutar el workflow **Database Migration** desde GitHub Actions para ejecutar m
 1. **Login** en `{url}/login` con las credenciales de admin
 2. **Crear evento** con fecha, hora, ubicación y descripción
 3. **Crear grupos** y agregar invitados (adultos/menores)
-4. **Crear ronda** definiendo fechas de apertura y cierre
+4. **Crear ronda** definiendo fechas, y elegir confirmación individual o invitación estática
 5. **Abrir la ronda** → se generan enlaces únicos por grupo
 6. **Copiar y compartir** los enlaces con cada grupo (WhatsApp, SMS, etc.)
 7. **Invitados responden** desde el formulario personalizado
